@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Other
+test.ipynb
+veedeo_test.py
+control_points.xlsx
+test_suid_download.ipynb
+yesterday_photo_objects.xlsx
