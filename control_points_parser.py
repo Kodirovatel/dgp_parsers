@@ -472,6 +472,38 @@ class SUIDClient:
             return []
 
 
+def mark_column_as(
+    objects: str,
+    objects_column: str,
+    objects_column_in_dataframe: str,
+    dataframe: pd.DataFrame,
+    column: str,
+    value: Any,
+):
+    """
+    Берет объекты из файла и помечает их в датафрейме указанным значением в указанной колонке
+
+    :param objects (str): название файла
+    :param objects_column (str): название колонки где лежат объекты в object_list
+    :param objects_column_in_dataframe (str): название колонки где лежат объекты в датафрейме
+    :param dataframe (pd.DataFrame): датафрейм с данными для изменения
+    :param column (str): в какой колонке делать отмеку
+    :param value (Any): какое значение выставить
+    """
+
+    try:
+        objects_list = list(pd.read_excel(objects)[objects_column])
+    except FileNotFoundError:
+        print(f"Файл {objects} не найден")
+        return
+    except Exception as e:
+        print(f"Ошибка с файлом {objects}: {e}")
+        return
+    mask = dataframe[objects_column_in_dataframe].isin(objects_list)
+    dataframe.loc[mask, column] = value
+    print(f"Помечено строк: {mask.sum()}")
+
+
 # ============= ИСПОЛЬЗОВАНИЕ =============
 
 if __name__ == "__main__":
@@ -480,6 +512,9 @@ if __name__ == "__main__":
     )
     print(
         "Для проверки дополнительных котрольных точек положить их названия в control_points.xlsx"
+    )
+    print(
+        "Чтобы отметить объекты как исключенные из проверки, надо поместить их id в файл excluded_objects.xlsx"
     )
     # Создаём клиент и авторизуемся в судир и суид
     sudir_login = input("Введите логин СУДИР:\n")
@@ -786,6 +821,15 @@ if __name__ == "__main__":
             )
         df_new["is_fact_date_suid_is_equal"] = (
             df_new["plan_finish_date"] == df_new["fact_end_date_suid"]
+        )
+        print("Обращаемся к файлу excluded_objects.xlsx")
+        mark_column_as(
+            objects="excluded_objects.xlsx",
+            objects_column="id",
+            objects_column_in_dataframe="object_id",
+            dataframe=df_new,
+            column="exclude_from_check",
+            value=True,
         )
         df_new.to_excel(f"control_points_{datetime.now().date()}.xlsx", index=False)
         input("Готово!")
