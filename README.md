@@ -8,21 +8,7 @@
 Для использования потребуются:  
 1) Пароль и логин для СУДИР (чтобы собрать данные с дашборда).  
 2) Пароль и логин в СУИД (чтобы получить данные из СУИД).  
-Если в какую-то из систем не получится авторизоваться, вы получите ошибку. При запуске вы увидите следующие информационные сообщения: "Для проверки вчерашних фотографий положить ID объектов в файл yesterday_photo_objects.xlsx", "Для проверки дополнительных контрольных точек положить их названия в control_points.xlsx", 'Чтобы отметить объекты как исключенные из проверки, надо поместить их id в файл excluded_objects.xlsx'.
-
-#### Фотографии за вчерашний день ####
-
-Чтобы проверить наличие у объекта на дашборде фотографий за вчерашний день, в папку с программой надо положить файл yesterday_photo_objects.xlsx. В нём должен быть столбец id (регистр важен!), каждая ячейка под ним должна содержать один id объекта. Можно добавить дополнительные столбцы, например с названием объекта, UIN и т.д. для своего удобства, это не повлияет на работу программы.  
-
-##### Пример содержимого файла yesterday_photo_objects.xlsx: ##### 
-
-id  
-1  
-2  
-3  
-716243  
-352  
-Результаты для указанных в файле объектов смотреть в столбце yesterday_photo.  
+Если в какую-то из систем не получится авторизоваться, вы получите ошибку. При запуске вы увидите следующие информационные сообщения: "Для проверки дополнительных контрольных точек положить их названия в control_points.xlsx", 'Чтобы отметить объекты как исключенные из проверки, надо поместить их id в файл excluded_objects.xlsx'.
 
 #### Дополнительные работы ####
 
@@ -54,6 +40,7 @@ id
 - `object_name` - название объекта 
 - `status` - статус работы на дашборде. complete - завершена, in_progress - выполняется, no_control_points - у объекта нет контрольных точек на дашборде, additional_check - - дополнительная работа из файла control_points.xlsx 
 - `name` - название работы 
+- `project_manager` - руководитель объекта
 - `developer` - заказчик 
 - `plan_finish_date` - планируемая дата завершения 
 - `fact_finish_date` - фактическая дата завершения 
@@ -89,6 +76,23 @@ id
 - `uin` - УИН объекта 
 - `video` - "видео есть" или "видео нет"  
 
+### Проверка фотографий ###
+
+Требуются логин и пароль для СУДИР (чтобы собрать данные с дашборда). При запуске вы увидите информационное сообщение: "Для проверки вчерашних фотографий положить ID объектов в файл yesterday_photo_objects.xlsx"
+
+Чтобы проверить наличие у объекта на дашборде фотографий за вчерашний день, в папку с программой надо положить файл yesterday_photo_objects.xlsx. В нём должен быть столбец id (регистр важен!), каждая ячейка под ним должна содержать один id объекта. Можно добавить дополнительные столбцы, например с названием объекта, UIN и т.д. для своего удобства, это не повлияет на работу программы. Проверяются только те объекты, id которых лежат в файле! В результате работы программы в папке с ней вы получите файл check_photo_сегодняшняя_дата.xlsx 
+
+##### Пример содержимого файла yesterday_photo_objects.xlsx: ##### 
+
+id  
+1  
+2  
+3  
+716243  
+352  
+Результаты для указанных в файле объектов смотреть в столбце yesterday_photo.  
+
+
 ## Клонирование репозитория ##
 
 ### Требования ###
@@ -120,6 +124,8 @@ powershell  -c "irm https://astral.sh/uv/install.ps1 | iex"
 `uv run python cameras.py`
 или
 `uv run python control_points_parser.py`
+или
+`uv run python check_photos.py`
 
 
 ## Создание standalone приложения ##
@@ -127,6 +133,8 @@ powershell  -c "irm https://astral.sh/uv/install.ps1 | iex"
 Для создания парсера контрольных точек  
 `uv run python -m nuitka --standalone --mingw64 --nofollow-import-to=IPython --nofollow-import-to=jupyter --nofollow-import-to=notebook control_points_parser.py`  
 Для создания парсера видеокамер  
-`uv run python -m nuitka --standalone --mingw64 --nofollow-import-to=IPython --nofollow-import-to=jupyter --nofollow-import-to=notebook cameras.py`  
+`uv run python -m nuitka --standalone --mingw64 --nofollow-import-to=IPython --nofollow-import-to=jupyter --nofollow-import-to=notebook cameras.py` 
+Для проверки фотографий
+`uv run python -m nuitka --standalone --mingw64 --nofollow-import-to=IPython --nofollow-import-to=jupyter --nofollow-import-to=notebook check_photos.py`
 
-В созданной папке control_points_parser.dist или cameras.dist запускаете соответственно control_points_parser.exe или cameras.exe
+В созданной папке control_points_parser.dist или cameras.dist или check_photos запускаете соответственно control_points_parser.exe, cameras.exe или check_photos.exe
