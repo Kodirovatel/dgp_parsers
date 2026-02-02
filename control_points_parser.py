@@ -1,8 +1,7 @@
 import pandas as pd
-import hashlib
 import requests
 from urllib.parse import urlparse, parse_qs, unquote, unquote_plus
-from datetime import datetime, timedelta
+from datetime import datetime
 import getpass
 import time
 import numpy as np
@@ -150,6 +149,19 @@ class DashboardstroiClient:
                 print("Ссылки на суид нет", e)
                 return None
         return None
+    
+    def get_manager_name(self, object_id) -> str:
+        """Получить имя руководителя проекта"""
+        response = self.get(f"/api/dashboard/{object_id}")
+        if response.status_code == 200:
+            try:
+                data = response.json()
+                return data.get("object", {}).get("project_manager", {}).get('name', 'Нет данных')
+            except Exception as e:
+                print("Ошибка", e)
+                return None
+        return None
+
 
     def get_etapi_data(self, object_id) -> Optional[Any]:
         """Получить данные этапов для объекта"""
@@ -171,113 +183,6 @@ class DashboardstroiClient:
             print(f"  Response: {response.text[:200]}")
             return None
 
-    def get_photo_status(self, object_id) -> list:
-        """
-        Проверить статус фотографий объекта
-        Возвращает: ['нет фотографий' / 'есть совпадение' / 'фото в порядке', есть ли фото за вчера]
-        """
-        response = self.get(f"/api/dashboard/{object_id}")
-
-        if response.status_code != 200:
-            return ["нет фотографий", False]
-
-        try:
-            data = response.json()
-            photos = data.get("photos", [])
-
-            if not photos:
-                return ["нет фотографий", False]
-
-            # Получаем basePhotoUrl и uin
-            base_photo_url = data.get("basePhotoUrl", "")
-            object_uin = data.get("object", {}).get("uin", "")
-
-            # Извлекаем все уникальные даты
-            dates = set()
-            for photo in photos:
-                taken_at = photo.get("taken_at")
-                if taken_at:
-                    date_only = taken_at.split()[0] if " " in taken_at else taken_at
-                    dates.add(date_only)
-
-            sorted_dates = sorted(dates, reverse=True)
-            last_two_dates = sorted_dates[:2]
-            yesterday_str = (datetime.now().date() - timedelta(days=1)).strftime(
-                "%Y-%m-%d"
-            )
-            yesterday = yesterday_str in last_two_dates
-
-            # Если дата только одна
-            if len(last_two_dates) < 2:
-                return ["есть совпадение", yesterday]
-
-            # Если даты разные, проверяем фотки на дубликаты
-            if last_two_dates[0] != last_two_dates[1]:
-                # Получаем фотки для двух последних дат
-                photos_date1 = [
-                    p
-                    for p in photos
-                    if p.get("taken_at", "").startswith(last_two_dates[0])
-                ]
-                photos_date2 = [
-                    p
-                    for p in photos
-                    if p.get("taken_at", "").startswith(last_two_dates[1])
-                ]
-
-                # Вычисляем хеши для фоток первой даты
-                hashes_date1 = set()
-                for photo in photos_date1:
-                    photo_hash = self.get_photo_hash(
-                        photo.get("photo_url"),
-                        base_photo_url,
-                        object_uin,
-                        last_two_dates[0],
-                    )
-                    if photo_hash:
-                        hashes_date1.add(photo_hash)
-
-                # Проверяем на совпадения со второй датой
-                for photo in photos_date2:
-                    photo_hash = self.get_photo_hash(
-                        photo.get("photo_url"),
-                        base_photo_url,
-                        object_uin,
-                        last_two_dates[1],
-                    )
-                    if photo_hash and photo_hash in hashes_date1:
-                        return ["есть совпадение", yesterday]
-
-                return ["фото в порядке", yesterday]
-
-            return ["есть совпадение", yesterday]
-
-        except Exception as e:
-            print(f"  Ошибка получения фото для {object_id}: {e}")
-            return ["нет фотографий", yesterday]
-
-    def get_photo_hash(
-        self, photo_url, base_photo_url, object_uin, date
-    ) -> Optional[str]:
-        """Получить MD5 хеш фотографии"""
-        if not photo_url or not base_photo_url or not object_uin or not date:
-            return None
-
-        try:
-            # Строим правильный URL: basePhotoUrl + uin + '/' + дата + '/' + photo_url
-            full_url = f"{base_photo_url}{object_uin}/{date}/{photo_url}"
-
-            response = self.session.get(full_url, timeout=5)
-
-            if response.status_code == 200:
-                # Вычисляем MD5 хеш содержимого
-                return hashlib.md5(response.content).hexdigest()
-        except Exception as e:
-            print(f"  Ошибка загрузки фото {photo_url}: {e}")
-
-        return None
-
-
 def collect_etapi_data(client, objects) -> List[Dict[str, Any]]:
     """
     Получаем контрольные точки для объектов
@@ -286,8 +191,12 @@ def collect_etapi_data(client, objects) -> List[Dict[str, Any]]:
     developer_map = {obj["id"]: obj.get("developer", {}).get("name") for obj in objects}
     all_data = []
 
+    cash = {}
+
     for idx, obj in enumerate(objects):
         object_id = obj["id"]
+        if object_id not in cash.keys():
+            cash[object_id] = client.get_manager_name(object_id)
         object_name = obj["name"]
         developer_name = developer_map.get(object_id)
 
@@ -321,6 +230,7 @@ def collect_etapi_data(client, objects) -> List[Dict[str, Any]]:
                 "object_name": object_name,
                 "status": "no_control_points",
                 "developer": developer_name,
+                "project_manager": cash[object_id],
                 "name": None,
                 "plan_finish_date": None,
                 "fact_finish_date": None,
@@ -357,6 +267,7 @@ def collect_etapi_data(client, objects) -> List[Dict[str, Any]]:
                     "status": status,
                     "name": point.get("name"),
                     "developer": developer_name,
+                    "project_manager": cash[object_id],
                     "plan_finish_date": point.get("plan_finish_date"),
                     "fact_finish_date": point.get("fact_finish_date"),
                     "plan": point.get("plan"),
@@ -508,9 +419,6 @@ def mark_column_as(
 
 if __name__ == "__main__":
     print(
-        "Для проверки вчерашних фотографий положить ID объектов в файл yesterday_photo_objects.xlsx"
-    )
-    print(
         "Для проверки дополнительных котрольных точек положить их названия в control_points.xlsx"
     )
     print(
@@ -561,46 +469,6 @@ if __name__ == "__main__":
         df_new.loc[:, "control_point_comparsion"] = df_new["suid_url"].apply(
             lambda x: "объект exon" if pd.notna(x) and "exonproject" in str(x) else None
         )
-        # Проверка фотографий
-        print("\n=== Проверка фотографий объектов ===")
-        print(
-            "Файл для проверки объектов на наличие вчерашних фотографий yesterday_photo_objects.xlsx"
-        )
-        try:
-            yesterday_photos_df = pd.read_excel("yesterday_photo_objects.xlsx")
-            yesterday_photos_list = yesterday_photos_df["id"].dropna().tolist()
-            print("     Данные из yesterday_photo_objects.xlsx получены")
-        except Exception as e:
-            print(f"Не удалось получить данные из yesterday_photo_objects.xlsx, {e}")
-            yesterday_photos_list = []
-
-        unique_objects = df_new[["object_id"]].drop_duplicates()
-        photo_status_cache = {}
-
-        for idx, row in unique_objects.iterrows():
-            object_id = row["object_id"]
-            print(f"Проверка фото для объекта {object_id}...")
-
-            status = dashboard_client.get_photo_status(object_id)
-            # Сохраняем оба значения, но второе только если object_id в yesterday_photos_list
-            if object_id in yesterday_photos_list:
-                photo_status_cache[object_id] = [status[0], status[1]]
-            else:
-                photo_status_cache[object_id] = [status[0], np.nan]
-
-            print(f"  Статус: {status[0]}")
-            time.sleep(0.5)
-
-        df_new["photo_status"] = df_new["object_id"].map(
-            lambda oid: photo_status_cache[oid][0]
-        )
-        df_new["yesterday_photo"] = df_new["object_id"].map(
-            lambda oid: photo_status_cache[oid][1]
-        )
-
-        print("\nСтатистика фотографий:")
-        print(df_new["photo_status"].value_counts())
-
         # Идём в SUID
         to_process = df_new[
             (df_new["control_point_comparsion"].isna())
@@ -753,6 +621,7 @@ if __name__ == "__main__":
                                 "object_name": object_name,
                                 "status": "additional_check",
                                 "name": cp_name,
+                                "project_manager": df_new[df_new["object_id"] == object_id]["project_manager"].iloc[0],
                                 "developer": df_new[df_new["object_id"] == object_id][
                                     "developer"
                                 ].iloc[0],
@@ -765,9 +634,6 @@ if __name__ == "__main__":
                                 "today": datetime.now().date(),
                                 "suid_url": suid_url,
                                 "control_point_comparsion": "дополнительная точка",
-                                "photo_status": df_new[
-                                    df_new["object_id"] == object_id
-                                ]["photo_status"].iloc[0],
                                 "url": f"https://dashboard-stroi.mos.ru/etapi/{object_id}",
                             }
                         )
@@ -779,6 +645,7 @@ if __name__ == "__main__":
                                 "object_name": object_name,
                                 "status": "additional_check",
                                 "name": cp_name,
+                                "project_manager": df_new[df_new["object_id"] == object_id]["project_manager"].iloc[0],
                                 "developer": df_new[df_new["object_id"] == object_id][
                                     "developer"
                                 ].iloc[0],
@@ -791,9 +658,6 @@ if __name__ == "__main__":
                                 "today": datetime.now().date(),
                                 "suid_url": suid_url,
                                 "control_point_comparsion": "не найдена в СУИД",
-                                "photo_status": df_new[
-                                    df_new["object_id"] == object_id
-                                ]["photo_status"].iloc[0],
                                 "url": f"https://dashboard-stroi.mos.ru/etapi/{object_id}",
                             }
                         )
