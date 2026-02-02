@@ -314,6 +314,6 @@ if __name__ == "__main__":
 
         print("\nСтатистика фотографий:")
         print(df_new["photo_status"].value_counts())
-        df_new[['object_id', 'uin', 'name', 'address', 'photo_status', 'yesterday_photo']].to_excel('test.xlsx', index=False, )
+        df_new[['object_id', 'uin', 'name', 'address', 'photo_status', 'yesterday_photo']].to_excel(f'photo_check_{datetime.now().date()}.xlsx', index=False, )
     except Exception as e:
         print(f'ошибка {e}')
