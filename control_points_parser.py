@@ -460,6 +460,9 @@ if __name__ == "__main__":
         df_new.loc[:, "fact_finish_date"] = pd.to_datetime(
             df_new["fact_finish_date"], format="%Y-%m-%d", errors="coerce"
         ).dt.date
+        df_new.loc[:, "planned_commissioning_directive_date"] = pd.to_datetime(
+            df_new["planned_commissioning_directive_date"], format="%d.%m.%Y", errors="coerce"
+        ).dt.date
         df_new.loc[:, "is_exceeded"] = np.where(
             df_new["status"] == "no_control_points",
             True,  # Если нет контрольных точек
@@ -699,6 +702,10 @@ if __name__ == "__main__":
         df_new["is_fact_date_suid_is_equal"] = (
             df_new["plan_finish_date"] == df_new["fact_end_date_suid"]
         )
+        df_new['is_directive_equal'] = (
+            df['plan_finish_date'] == df['planned_commissioning_directive_date']
+        )
+
         print("Обращаемся к файлу excluded_objects.xlsx")
         mark_column_as(
             objects="excluded_objects.xlsx",

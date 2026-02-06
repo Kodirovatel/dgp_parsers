@@ -65,6 +65,7 @@ id
 - `found_in_suid` - найдена ли работа в СУИД (для работ из control_points.xlsx)
 - `is_fact_date_suid_is_equal` - равны ли `plan_finish_date` и `fact_end_date_suid`
 - `exclude_from_check` - исключение объекта из проверки
+- `is_directive_equal` - равны ли `planned_commissioning_directive_date` и `plan_finish_date`
 - `created_at`, `updated_at`, `deleted_at`, `color` - дополнительная информация.
 
 ### Видеокамеры ###
