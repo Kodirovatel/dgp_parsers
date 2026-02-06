@@ -29,6 +29,7 @@ class DashboardstroiClient:
         # 1. Инициализация СУДИР
         auth_url = "https://sudir.mos.ru/blitz/login/methods/password?bo=%2Fblitz%2Foauth%2Fae%3Fclient_id%3Ddashboard-stroi.mos.ru%26redirect_uri%3Dhttps%253A%252F%252Fdashboard-stroi.mos.ru%252Foauth%252Flogin-internal%26response_type%3Dcode%26scope%3Dopenid%2Bprofile%2Bemail%2Bemployee%2Bgroups%26state%3DENZPq1I93b184s6FxZzvh4yOwKZN5eyhjDBDJsfg%26access_type%3Doffline"
 
+
         self.session.get(auth_url)
 
         # 2. Проверка аккаунтов
@@ -151,7 +152,9 @@ class DashboardstroiClient:
         return None
     
     def get_manager_name(self, object_id) -> str:
-        """Получить имя руководителя проекта"""
+        """Получить имя руководителя проекта
+        Нужен, т.к. его нет в запросе, который выполняет get_catalog_objects
+        """
         response = self.get(f"/api/dashboard/{object_id}")
         if response.status_code == 200:
             try:
@@ -189,6 +192,7 @@ def collect_etapi_data(client, objects) -> List[Dict[str, Any]]:
     """
 
     developer_map = {obj["id"]: obj.get("developer", {}).get("name") for obj in objects}
+    planned_commissioning_directive_date_map = {obj['id']: obj.get('planned_commissioning_directive_date') for obj in objects}
     all_data = []
 
     cash = {}
@@ -199,6 +203,7 @@ def collect_etapi_data(client, objects) -> List[Dict[str, Any]]:
             cash[object_id] = client.get_manager_name(object_id)
         object_name = obj["name"]
         developer_name = developer_map.get(object_id)
+        planned_commissioning_directive_date = planned_commissioning_directive_date_map.get(object_id)
 
         print(f"[{idx + 1}/{len(objects)}] Обработка объекта {object_id}...")
 
@@ -239,6 +244,7 @@ def collect_etapi_data(client, objects) -> List[Dict[str, Any]]:
                 "created_at": None,
                 "updated_at": None,
                 "deleted_at": None,
+                "planned_commissioning_directive_date": planned_commissioning_directive_date,
                 "plan_start_date": None,
                 "fact_start_date": None,
                 "plan_progress": None,
@@ -275,6 +281,7 @@ def collect_etapi_data(client, objects) -> List[Dict[str, Any]]:
                     "created_at": point.get("created_at"),
                     "updated_at": point.get("updated_at"),
                     "deleted_at": point.get("deleted_at"),
+                    "planned_commissioning_directive_date": planned_commissioning_directive_date,
                     "plan_start_date": point.get("plan_start_date"),
                     "fact_start_date": point.get("fact_start_date"),
                     "plan_progress": point.get("plan_progress"),
@@ -430,6 +437,7 @@ if __name__ == "__main__":
     suid_login = input("Введите логин СУИД: ")
     suid_password = getpass.getpass("Введите пароль СУИД: ")
 
+
     dashboard_client = DashboardstroiClient(sudir_login, sudir_password)
     suid_client = SUIDClient(suid_login, suid_password)
     try:
@@ -463,7 +471,10 @@ if __name__ == "__main__":
             ),
         )
 
-        df_new.loc[:, "url"] = "https://dashboard-stroi.mos.ru/etapi/" + df_new[
+        df_new.loc[:, "etapi_url"] = "https://dashboard-stroi.mos.ru/etapi/" + df_new[
+            "object_id"
+        ].astype(str)
+        df_new.loc[:, "dasboard_url"] = "https://dashboard-stroi.mos.ru/dashboard/" + df_new[
             "object_id"
         ].astype(str)
         df_new.loc[:, "control_point_comparsion"] = df_new["suid_url"].apply(
@@ -634,7 +645,8 @@ if __name__ == "__main__":
                                 "today": datetime.now().date(),
                                 "suid_url": suid_url,
                                 "control_point_comparsion": "дополнительная точка",
-                                "url": f"https://dashboard-stroi.mos.ru/etapi/{object_id}",
+                                "etapi_url": f"https://dashboard-stroi.mos.ru/etapi/{object_id}",
+                                "dashboard_url": f"https://dashboard-stroi.mos.ru/dashboard/{object_id}",
                             }
                         )
                         print(f"  Есть {cp_name}")
@@ -658,7 +670,8 @@ if __name__ == "__main__":
                                 "today": datetime.now().date(),
                                 "suid_url": suid_url,
                                 "control_point_comparsion": "не найдена в СУИД",
-                                "url": f"https://dashboard-stroi.mos.ru/etapi/{object_id}",
+                                "etapi_url": f"https://dashboard-stroi.mos.ru/etapi/{object_id}",
+                                "dashboard_url": f"https://dashboard-stroi.mos.ru/dashboard/{object_id}",
                             }
                         )
                         print(f"  Нет {cp_name}")
