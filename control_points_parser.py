@@ -703,7 +703,7 @@ if __name__ == "__main__":
             df_new["plan_finish_date"] == df_new["fact_end_date_suid"]
         )
         df_new['is_directive_equal'] = (
-            df['plan_finish_date'] == df['planned_commissioning_directive_date']
+            df['plan_finish_date'] <= df['planned_commissioning_directive_date']
         )
 
         print("Обращаемся к файлу excluded_objects.xlsx")
