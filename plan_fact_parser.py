@@ -245,7 +245,7 @@ if __name__ == '__main__':
         time.sleep(0.5)
         
     result = pd.DataFrame(all_rows)
-    result = result.rename(columns={'name': 'объект', 'view_name': 'объект', 'fact': 'факт', 'plan': 'план',
+    result = result.rename(columns={'name': 'имя_объекта', 'view_name': 'работа', 'fact': 'факт', 'plan': 'план',
                         'fact_delta_week' : 'факт_неделя', 'fact_delta_month': 'факт_месяц', 'plan_delta_week' : 'план_неделя',
                         'plan_delta_month' : 'план_месяц', 'link' : 'ссылка'})
     result.to_excel(f'plan_fact_{datetime.today().date()}.xlsx', index=False)
