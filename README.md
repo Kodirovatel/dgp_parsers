@@ -81,7 +81,7 @@ id
 
 Требуются логин и пароль для СУДИР (чтобы собрать данные с дашборда). При запуске вы увидите информационное сообщение: "Для проверки вчерашних фотографий положить ID объектов в файл yesterday_photo_objects.xlsx"
 
-Чтобы проверить наличие у объекта на дашборде фотографий за вчерашний день, в папку с программой надо положить файл yesterday_photo_objects.xlsx. В нём должен быть столбец id (регистр важен!), каждая ячейка под ним должна содержать один id объекта. Можно добавить дополнительные столбцы, например с названием объекта, UIN и т.д. для своего удобства, это не повлияет на работу программы. Проверяются только те объекты, id которых лежат в файле! В результате работы программы в папке с ней вы получите файл check_photo_сегодняшняя_дата.xlsx 
+Чтобы проверить наличие у объекта на дашборде фотографий за вчерашний день, в папку с программой надо положить файл `yesterday_photo_objects.xlsx`. В нём должен быть столбец id (регистр важен!), каждая ячейка под ним должна содержать один id объекта. Можно добавить дополнительные столбцы, например с названием объекта, UIN и т.д. для своего удобства, это не повлияет на работу программы. Проверяются только те объекты, id которых лежат в файле! В результате работы программы в папке с ней вы получите файл `check_photo_сегодняшняя_дата.xlsx`
 
 Столбцы в файле: 
 - `photo_status` - статус фотографий. "нет фотографий", "есть совпадение" или "фото в порядке".
@@ -137,10 +137,10 @@ powershell  -c "irm https://astral.sh/uv/install.ps1 | iex"
 ## Создание standalone приложения ##
 С установленным uv в терминале заходите в папку со скриптами и выполняете нужную команду:  
 Для создания парсера контрольных точек  
-`uv run python -m nuitka --standalone --mingw64 --nofollow-import-to=IPython --nofollow-import-to=jupyter --nofollow-import-to=notebook control_points_parser.py`  
+`uv run pyinstaller --onefile --console --exclude-module IPython --exclude-module jupyter --exclude-module notebook --exclude-module matplotlib control_points_parser.py`  
 Для создания парсера видеокамер  
-`uv run python -m nuitka --standalone --mingw64 --nofollow-import-to=IPython --nofollow-import-to=jupyter --nofollow-import-to=notebook cameras.py` 
+`uv run pyinstaller --onefile --console --exclude-module IPython --exclude-module jupyter --exclude-module notebook --exclude-module matplotlib cameras.py` 
 Для проверки фотографий
-`uv run python -m nuitka --standalone --mingw64 --nofollow-import-to=IPython --nofollow-import-to=jupyter --nofollow-import-to=notebook check_photos.py`
+`uv run pyinstaller --onefile --console --exclude-module IPython --exclude-module jupyter --exclude-module notebook --exclude-module matplotlib check_photos.py`
 
-В созданной папке control_points_parser.dist или cameras.dist или check_photos запускаете соответственно control_points_parser.exe, cameras.exe или check_photos.exe
+В созданной папке `dist` запускаете соответственно `control_points_parser.exe`, `cameras.exe` или `check_photos.exe`
