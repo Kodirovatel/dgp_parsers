@@ -1,5 +1,5 @@
 # Репозиторий с парсерами данных из дашборда ДГП и СУИД #
-Тут у нас два парсера, первый (control_points_parser.py) по контрольным точкам, второй (cameras.py) для видеокамер.
+Тут у нас четыре парсера, первый (`control_points_parser.py`) по контрольным точкам, второй (`cameras.py`) для видеокамер, третий (`check_photos.py`) для проверки фотографий, четвертый (`plan_fact_parser.py`) для сбора плана и факта.
 
 ## Описание программ ##
 
@@ -98,6 +98,24 @@ id
 352  
 Результаты для указанных в файле объектов смотреть в столбце yesterday_photo.  
 
+### План и факт ###
+
+Требуются логин и пароль для СУДИР (чтобы собрать данные с дашборда). После того, как получится успешно залогиниться, скрипт начнет собирать данные, после каждого обработанного объекта выводя сообщение о том, сколько осталось объектов. В результате в папке с программой будет создан файл `plan_fact_{текущая_дата}.xlsx`.  
+
+Внутри файла следующие колонки для аналитики:
+- `id`
+- `имя_объекта`
+- `uin`
+- `работа`
+- `факт`
+- `план`
+- `факт_неделя`
+- `факт_месяц`
+- `план_неделя`
+- `план_месяц`
+- `ссылка`
+
+**ВАЖНО!** В файл подадут все работы, даже те, которые не видны у объекта на сайте. Их можно отличить по остутствию значений плана и факта и при необходимости отфильтровать.
 
 ## Клонирование репозитория ##
 
@@ -132,6 +150,8 @@ powershell  -c "irm https://astral.sh/uv/install.ps1 | iex"
 `uv run python control_points_parser.py`
 или
 `uv run python check_photos.py`
+или
+`uv run python plan_fact_parser.py`
 
 
 ## Создание standalone приложения ##
@@ -142,5 +162,7 @@ powershell  -c "irm https://astral.sh/uv/install.ps1 | iex"
 `uv run pyinstaller --onefile --console --exclude-module IPython --exclude-module jupyter --exclude-module notebook --exclude-module matplotlib cameras.py` 
 Для проверки фотографий
 `uv run pyinstaller --onefile --console --exclude-module IPython --exclude-module jupyter --exclude-module notebook --exclude-module matplotlib check_photos.py`
+Для сбора плана и факта
+`uv run pyinstaller --onefile --console --exclude-module IPython --exclude-module jupyter --exclude-module notebook --exclude-module matplotlib plan_fact_parser.py`
 
-В созданной папке `dist` запускаете соответственно `control_points_parser.exe`, `cameras.exe` или `check_photos.exe`
+В созданной папке `dist` запускаете соответственно `control_points_parser.exe`, `cameras.exe`, `check_photos.exe` или `plan_fact_parser.exe`
